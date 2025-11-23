@@ -20,6 +20,8 @@ CORS(app, resources={
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:28018/")
 client = MongoClient(MONGO_URI)
 db = client["appointment_scheduling_db"]
+appointments_col = db["appointments"]
+slots_col = db["available_slots"]
 
 @app.route("/health")
 def health():
@@ -34,11 +36,13 @@ def get_available_slots():
     resource_id = request.args.get("resource_id")
     # Fetch available slots from MongoDB
     query = {"resource_id": resource_id} if resource_id else {}
-    slots_cursor = db["available_slots"].find(query)
+    cursor = slots_col.find(query)
+
     slots = []
     for slot in slots_cursor:
         slot["_id"] = str(slot["_id"])
         slots.append(slot)
+
     return jsonify({
         "message": "Available slots endpoint",
         "resource_id": resource_id,
@@ -59,8 +63,12 @@ def book_appointment():
     time = data.get("time")
     customer_email = data.get("customer_email")
 
+    # Basic validation
+    if not all([customer_id, resource_id, date, time]):
+        return jsonify({"error": : "Missing required fields (customer_id, resource_id, date, time)"}), 400
+
     # Optimistic locking: check if slot is already booked
-    existing = db["appointments"].find_one({
+    existing = appointments_col.find_one({
         "resource_id": resource_id,
         "date": date,
         "time": time
@@ -69,14 +77,17 @@ def book_appointment():
         return jsonify({"error": "Slot already booked"}), 409
 
     # Insert new appointment
-    result = db["appointments"].insert_one({
+    doc = {
         "customer_id": customer_id,
         "resource_id": resource_id,
         "date": date,
         "time": time,
         "customer_email": customer_email,
-        "status": "confirmed"
-    })
+        "status": "confirmed",
+        "created_at": datetime.utcnow().isoformat()
+    }
+
+    result = appointments_col.insert_one(doc)
 
     return jsonify({
         "message": "Appointment booked successfully",
@@ -97,17 +108,20 @@ def confirm_appointment():
 
     """
     User Story 2: Receive Appointment Confirmation
-    Publishes confirmation message to notification queue
-    Ensures at-least-once delivery for reliability
+    Sends a confirmation notification via the Email Microservice.
     """
-    data = request.get_json()
+    data = request.get_json() or {}
     appointment_id = data.get("appointment_id")
+
+    if not appointment_id:
+        return jsonify({"error": "appointment_id is required"}), 400
 
     # Fetch appointment details from MongoDB
     try:
-        appointment = db["appointments"].find_one({"_id": ObjectId(appointment_id)})
+        oid = ObjectId(appointment_id)
     except Exception:
         return jsonify({"error": "Invalid appointment ID format"}), 400
+    appointment = appointments_col.find_one({"_id": oid})
     if not appointment:
         return jsonify({"error": "Appointment not found"}), 404
 
@@ -124,16 +138,20 @@ def confirm_appointment():
     }
 
     # Send request to email microservice
+    email_service_url = os.getenv(
+        "EMAIL_MICROSERVICE_URL",
+        "http://127.0.0.1:5002/send-email"
+    )
+
     try:
-        email_service_url = os.getenv("EMAIL_MICROSERVICE_URL", "http://127.0.0.1:5002/send-email")
-        response = requests.post(email_service_url, json=email_payload)
+        response = requests.post(email_service_url, json=email_payload, timeout=5)
         response.raise_for_status()
         notification_status = "sent"
-    except Exception as e:
+    except Exception:
         notification_status = "failed"
 
     return jsonify({
-        "message": "Confirmation sent to notification service",
+        "message": "Confirmation processed",
         "appointment_id": appointment_id,
         "notification_status": notification_status
     }), 200
@@ -141,16 +159,23 @@ def confirm_appointment():
 @app.route("/api/appointments/<appointment_id>", methods=["GET"])
 def get_appointment(appointment_id):
     """
-    Retrieves appointment details
+    Retrieves appointment details by ID.
     """
-    # Database lookup
-    appointment = db["appointments"].find_one({"_id": ObjectId(appointment_id)})
+    try:
+        oid = ObjectId(appointment_id)
+    except Exception:
+        return jsonify({"error": "Invalid appointment ID format"}), 400
+
+    appointment = appointments_col.find_one({"_id": oid})
     if not appointment:
         return jsonify({"error": "Appointment not found"}), 404
 
+    appointment["_id"] = str(appointment["_id"])
+
     return jsonify({
         "message": "Appointment details",
-        "appointment_id": appointment_id
+        "appointment_id": appointment_id,
+        "appointment": appointment
     }), 200
 
 if __name__ == "__main__":
