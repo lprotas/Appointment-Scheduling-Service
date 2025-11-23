@@ -21,7 +21,7 @@ MongoDB is used for persistence, and the Email Microservice is called over HTTP.
 
 ### Health Check
 
-**GET** `/health`  
+**GET** /health  
 Returns basic status.
 
 ```json
@@ -34,11 +34,11 @@ Returns basic status.
 
 ### Get Available Slots
 
-**GET** `/api/slots/available?resource_id={resource_id}`  
+**GET** /api/slots/available?resource_id={resource_id}  
 
 Returns available time slots for a given resource.
 
-- `resource_id` (optional): if omitted, returns all slots.
+- resource_id (optional): if omitted, returns all slots.
 
 Example response:
 
@@ -62,7 +62,7 @@ Example response:
 
 ### Book Appointment
 
-**POST** `/api/appointments`  
+**POST** /api/appointments  
 
 Request body:
 
@@ -104,7 +104,7 @@ Status code: **409 Conflict**
 
 ### Confirm Appointment (Email)
 
-**POST** `/api/appointments/confirm`  
+**POST** /api/appointments/confirm  
 
 Request body:
 
@@ -124,14 +124,14 @@ Example response:
 }
 ```
 
-- `notification_status` is `"sent"` when the Email Microservice returns 2xx.
-- Otherwise it is `"failed"` (network error or non-2xx response).
+- notification_status is `"sent"` when the Email Microservice returns 2xx.
+- Otherwise it is "failed" (network error or non-2xx response).
 
 ---
 
 ### Get Appointment Details
 
-**GET** `/api/appointments/{appointment_id}`  
+**GET** /api/appointments/{appointment_id}  
 
 Example response:
 
@@ -163,12 +163,12 @@ Example (Windows, MongoDB installed in Program Files):
 ```powershell
 mkdir C:\Users\acos2\CS361\Project\data\mongo-appointments
 
-"C:\Program Files\MongoDB\Server\8.0\bin\mongod.exe" `
-  --port 28018 `
+"C:\Program Files\MongoDB\Server\8.0\bin\mongod.exe" 
+  --port 28018 
   --dbpath "C:\Users\acos2\CS361\Project\data\mongo-appointments"
 ```
 
-Make sure MongoDB is running on `mongodb://localhost:28018/`.
+Make sure MongoDB is running on mongodb://localhost:28018/.
 
 ---
 
@@ -185,7 +185,7 @@ pip install -r requirements.txt
 
 ### 3. Environment Variables
 
-Create a `.env` file in the project root (or use `.env.example` as a template):
+Create a .env file in the project root (or use .env.example as a template):
 
 ```env
 MONGO_URI=mongodb://localhost:28018/
@@ -194,7 +194,7 @@ CORS_ORIGINS=http://localhost:5173,http://localhost:5000
 EMAIL_MICROSERVICE_URL=http://127.0.0.1:5002/send-email
 ```
 
-- `EMAIL_MICROSERVICE_URL` must point to a running instance of the Email Microservice.
+- EMAIL_MICROSERVICE_URL must point to a running instance of the Email Microservice.
 
 ---
 
@@ -204,7 +204,7 @@ EMAIL_MICROSERVICE_URL=http://127.0.0.1:5002/send-email
 python app.py
 ```
 
-Service URL: `http://localhost:5006`
+Service URL: http://localhost:5006
 
 Check:
 
@@ -216,7 +216,7 @@ curl http://localhost:5006/health
 
 ## Helper Scripts
 
-### `test.py`
+### test.py
 
 - Sends a health check request
 - Books a test appointment
@@ -232,9 +232,9 @@ python test.py
 
 ---
 
-### `clear_appointments.py`
+### clear_appointments.py
 
-Clears all documents from the `appointments` collection in `appointment_scheduling_db`.  
+Clears all documents from the appointments collection in appointment_scheduling_db.  
 Useful when resetting test data.
 
 Run:
@@ -248,5 +248,5 @@ python clear_appointments.py
 ## Team
 
 - **Lev** – Original implementation (service skeleton and endpoints)
-- **Olivia** – MongoDB integration, Email Microservice integration, CORS configuration, `test.py`, `clear_appointments.py`, and README updates.
+- **Olivia** – MongoDB integration, Email Microservice integration, CORS configuration, test.py, clear_appointments.py, and README updates.
 
