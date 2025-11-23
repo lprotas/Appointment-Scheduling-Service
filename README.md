@@ -249,4 +249,4 @@ python clear_appointments.py
 
 - **Lev** – Original implementation (service skeleton and endpoints)
 - **Olivia** – MongoDB integration, Email Microservice integration, CORS configuration, `test.py`, `clear_appointments.py`, and README updates.
-- 
+
