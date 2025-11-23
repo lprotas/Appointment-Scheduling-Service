@@ -39,7 +39,7 @@ def get_available_slots():
     cursor = slots_col.find(query)
 
     slots = []
-    for slot in slots_cursor:
+    for slot in cursor:
         slot["_id"] = str(slot["_id"])
         slots.append(slot)
 
@@ -181,4 +181,5 @@ def get_appointment(appointment_id):
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5006"))
     app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
+
 
